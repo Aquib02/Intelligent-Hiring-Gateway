@@ -22,3 +22,29 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Backend
+Backend/.env
+Backend/venv/
+Backend/__pycache__/
+Backend/*.db
+*.pyc
+
+# Frontend
+Frontend/node_modules/
+Frontend/dist/
+Frontend/dist-ssr/
+
+# Logs
+*.log
+logs/
+
+# Editor
+.vscode/
+.idea/
+.DS_Store
+
+# Environment files
+.env
+.env.*
+!.env.example
