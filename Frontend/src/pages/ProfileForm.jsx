@@ -90,7 +90,7 @@ export default function ProfileForm() {
 
     try {
       // API call to the backend update_profile endpoint
-      const response = await axios.post('http://localhost:8000/employee/profile', submissionData, {
+      const response = await axios.post('https://intelligent-hiring-gateway.onrender.com/employee/profile', submissionData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },

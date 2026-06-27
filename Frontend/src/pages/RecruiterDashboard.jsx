@@ -40,7 +40,7 @@ const fetchMyJobs = async () => {
   if (!recruiterId) return; // ID check safety
   try {
     // Backend se confirm karein ki URL /recruiter/ID/jobs hai ya /recruiter/jobs/ID
-    const res = await axios.get(`http://localhost:8000/recruiter/${recruiterId}/jobs`);
+    const res = await axios.get(`https://intelligent-hiring-gateway.onrender.com/recruiter/${recruiterId}/jobs`);
     console.log("Fetched Jobs:", res.data); // Debugging ke liye
     setMyJobs(res.data);
   } catch (err) {
@@ -63,7 +63,7 @@ const handleLogout = () => {
     formData.append('recruiter_id', recruiterId);
 
     try {
-      await axios.post('http://localhost:8000/recruiter/jobs', formData);
+      await axios.post('https://intelligent-hiring-gateway.onrender.com/recruiter/jobs', formData);
       alert('🎉 Job successfully posted with AI Skills Extraction!');
       setNewJob({ title: '', description: '' });
       setActiveTab('show'); 
@@ -83,7 +83,7 @@ const handleLogout = () => {
 
     setFetchingResponsesId(jobId);
     try {
-  const res = await axios.get(`http://localhost:8000/recruiter/jobs/${jobId}/responses`);
+  const res = await axios.get(`https://intelligent-hiring-gateway.onrender.com/recruiter/jobs/${jobId}/responses`);
   
   // Safety check: Agar backend se data structure different hai
   const data = res.data.responses ? res.data : { job_id: jobId, responses: res.data };

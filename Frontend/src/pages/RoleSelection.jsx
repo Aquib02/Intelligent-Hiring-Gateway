@@ -13,7 +13,7 @@ export default function RoleSelection() {
     formData.append('role', selectedRole);
 
     try {
-      await axios.post('http://localhost:8000/user/set-role', formData);
+      await axios.post('https://intelligent-hiring-gateway.onrender.com/user/set-role', formData);
       localStorage.setItem('role', selectedRole);
 
       if (selectedRole === 'employee') {

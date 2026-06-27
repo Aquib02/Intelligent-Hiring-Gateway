@@ -31,7 +31,7 @@ export default function Login() {
     formData.append('password', password);
 
     try {
-      const response = await axios.post('http://localhost:8000/auth/login', formData);
+      const response = await axios.post('https://intelligent-hiring-gateway.onrender.com/auth/login', formData);
       const { user_id, role, is_profile_complete } = response.data; 
       
       localStorage.setItem('user_id', user_id);
@@ -57,7 +57,7 @@ export default function Login() {
         );
         
         // 2. Apne backend ko bhejna
-        const response = await axios.post('http://localhost:8000/auth/google', {
+        const response = await axios.post('https://intelligent-hiring-gateway.onrender.com/auth/google', {
           email: userInfo.data.email,
           name: userInfo.data.name
         });

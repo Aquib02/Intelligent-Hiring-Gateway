@@ -18,7 +18,7 @@ export default function Signup() {
     formData.append('password', password);
 
     try {
-      await axios.post('http://localhost:8000/auth/register', formData);
+      await axios.post('https://intelligent-hiring-gateway.onrender.com/auth/register', formData);
       alert('Account successfully created! Please log in.');
       navigate('/'); 
     } catch (error) {

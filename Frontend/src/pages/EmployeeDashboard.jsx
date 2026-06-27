@@ -25,7 +25,7 @@ export default function EmployeeDashboard() {
     // Fetch initial profile for navbar initial
     const userId = localStorage.getItem('user_id');
     if(userId) {
-      axios.get(`http://localhost:8000/user/${userId}`)
+      axios.get(`https://intelligent-hiring-gateway.onrender.com/user/${userId}`)
         .then(res => setUserProfile(res.data))
         .catch(err => console.log("Profile fetch error"));
     }
@@ -33,7 +33,7 @@ export default function EmployeeDashboard() {
 
   const fetchJobs = async () => {
     try {
-      const res = await axios.get('http://localhost:8000/jobs');
+      const res = await axios.get('https://intelligent-hiring-gateway.onrender.com/jobs');
       setJobs(res.data);
     } catch (err) {
       console.error("Jobs fetch error:", err);
@@ -50,7 +50,7 @@ export default function EmployeeDashboard() {
     const userId = localStorage.getItem('user_id');
     setShowDropdown(false);
     try {
-      const res = await axios.get(`http://localhost:8000/user/${userId}`);
+      const res = await axios.get(`https://intelligent-hiring-gateway.onrender.com/user/${userId}`);
       setUserProfile(res.data);
       setShowProfileModal(true);
     } catch (err) {
@@ -68,7 +68,7 @@ export default function EmployeeDashboard() {
     formData.append('employee_id', employeeId);
 
     try {
-    const res = await axios.post('http://localhost:8000/employee/apply', formData);
+    const res = await axios.post('https://intelligent-hiring-gateway.onrender.com/employee/apply', formData);
     alert('🎉 Successfully applied!');
   } catch (error) {
     if (error.response) {
