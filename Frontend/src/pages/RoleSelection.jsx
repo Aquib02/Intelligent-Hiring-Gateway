@@ -1,6 +1,8 @@
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { FaLaptopCode, FaUserTie } from 'react-icons/fa';
+import { API_BASE_URL } from '../config';
+import { setAuthSession } from '../utils/auth';
 
 export default function RoleSelection() {
   const navigate = useNavigate();
@@ -13,76 +15,52 @@ export default function RoleSelection() {
     formData.append('role', selectedRole);
 
     try {
-      await axios.post('https://intelligent-hiring-gateway.onrender.com/user/set-role', formData);
-      localStorage.setItem('role', selectedRole);
+      const res = await axios.post(`${API_BASE_URL}/user/set-role`, formData);
+      if (res.data?.access_token) {
+        setAuthSession({ access_token: res.data.access_token, user_id: userId, role: selectedRole });
+      } else {
+        localStorage.setItem('role', selectedRole);
+      }
 
-      if (selectedRole === 'employee') {
-        navigate('/employee/profile');
+      if (selectedRole === 'jobseeker' || selectedRole === 'employee') {
+        navigate('/jobseeker/dashboard');
       } else if (selectedRole === 'recruiter') {
         navigate('/recruiter/dashboard');
       }
     } catch (error) {
-      alert("Role set karne mein error aayi.");
-      console.error(error);
+      alert("Error setting role. Please try again.");
     }
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-[#f0f2ff] p-4 relative overflow-hidden">
-      
-      {/* Background Decorative Circles (Matching Login Page) */}
-      <div className="absolute top-[-10%] left-[-5%] w-96 h-96 bg-[#6e4ef2] rounded-full mix-blend-multiply filter blur-[100px] opacity-30 animate-pulse"></div>
-      <div className="absolute bottom-[-10%] right-[-5%] w-96 h-96 bg-blue-400 rounded-full mix-blend-multiply filter blur-[100px] opacity-30 animate-pulse" style={{ animationDelay: '2s' }}></div>
+    <div className="min-h-screen flex items-center justify-center bg-[#f0f2ff] p-4">
+      <div className="max-w-xl w-full bg-white rounded-3xl shadow-xl p-8 md:p-12 text-center">
+        <h2 className="text-3xl font-black text-gray-900 mb-3">Choose Your Portal</h2>
+        <p className="text-gray-500 mb-8">Role-Based Access Control: Select how you wish to use Intelligent Hiring Gateway.</p>
 
-      {/* Header Section */}
-      <div className="text-center z-10 mb-12">
-        <h1 className="text-5xl font-black text-gray-900 mb-4 tracking-tight">Welcome Aboard! 🚀</h1>
-        <p className="text-lg text-gray-600 font-medium max-w-md mx-auto">
-          How would you like to use this platform? Select your role to get started.
-        </p>
-      </div>
-
-      {/* Cards Container */}
-      <div className="grid md:grid-cols-2 gap-8 w-full max-w-4xl z-10 px-4">
-        
-        {/* Candidate Card */}
-        <div 
-          onClick={() => handleRoleSelection('employee')}
-          className="bg-white p-10 rounded-[2rem] shadow-xl hover:shadow-2xl border-2 border-transparent hover:border-[#6e4ef2] transition-all duration-300 cursor-pointer transform hover:-translate-y-2 group flex flex-col items-center text-center relative overflow-hidden"
-        >
-          {/* Subtle background glow on hover */}
-          <div className="absolute inset-0 bg-gradient-to-b from-[#f0f2ff] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-          
-          <div className="relative z-10 flex flex-col items-center">
-            <div className="w-24 h-24 rounded-full bg-[#f5f6fa] group-hover:bg-[#6e4ef2] group-hover:text-white text-[#6e4ef2] flex items-center justify-center text-4xl mb-6 transition-colors duration-300 shadow-sm">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div 
+            onClick={() => handleRoleSelection('jobseeker')}
+            className="cursor-pointer border-2 border-transparent hover:border-[#6e4ef2] bg-purple-50 hover:bg-purple-100/50 p-8 rounded-2xl transition duration-300 flex flex-col items-center group shadow-sm hover:shadow-md"
+          >
+            <div className="w-16 h-16 bg-[#6e4ef2] text-white rounded-2xl flex items-center justify-center text-3xl mb-4 group-hover:scale-110 transition">
               <FaLaptopCode />
             </div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-3 group-hover:text-[#6e4ef2] transition-colors">Candidate</h2>
-            <p className="text-gray-500 font-medium leading-relaxed">
-              I want to discover amazing companies, apply for jobs, and track my applications with AI.
-            </p>
+            <h3 className="font-bold text-lg text-gray-900 mb-1">Job Seeker</h3>
+            <p className="text-xs text-gray-500">Scan resumes with AI ATS, explore matches, and track applications.</p>
           </div>
-        </div>
 
-        {/* Recruiter Card */}
-        <div 
-          onClick={() => handleRoleSelection('recruiter')}
-          className="bg-white p-10 rounded-[2rem] shadow-xl hover:shadow-2xl border-2 border-transparent hover:border-blue-500 transition-all duration-300 cursor-pointer transform hover:-translate-y-2 group flex flex-col items-center text-center relative overflow-hidden"
-        >
-          {/* Subtle background glow on hover */}
-          <div className="absolute inset-0 bg-gradient-to-b from-blue-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-          
-          <div className="relative z-10 flex flex-col items-center">
-            <div className="w-24 h-24 rounded-full bg-[#f5f6fa] group-hover:bg-blue-500 group-hover:text-white text-blue-500 flex items-center justify-center text-4xl mb-6 transition-colors duration-300 shadow-sm">
+          <div 
+            onClick={() => handleRoleSelection('recruiter')}
+            className="cursor-pointer border-2 border-transparent hover:border-[#6e4ef2] bg-blue-50 hover:bg-blue-100/50 p-8 rounded-2xl transition duration-300 flex flex-col items-center group shadow-sm hover:shadow-md"
+          >
+            <div className="w-16 h-16 bg-blue-600 text-white rounded-2xl flex items-center justify-center text-3xl mb-4 group-hover:scale-110 transition">
               <FaUserTie />
             </div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-3 group-hover:text-blue-500 transition-colors">Recruiter</h2>
-            <p className="text-gray-500 font-medium leading-relaxed">
-              I want to post jobs, manage candidates, and use AI to find the perfect match for my team.
-            </p>
+            <h3 className="font-bold text-lg text-gray-900 mb-1">Recruiter / HR</h3>
+            <p className="text-xs text-gray-500">Post jobs, rank candidates by ATS score, generate interview questions.</p>
           </div>
         </div>
-
       </div>
     </div>
   );

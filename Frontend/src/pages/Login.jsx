@@ -2,21 +2,23 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { useGoogleLogin } from '@react-oauth/google';
-import { FaRegUser, FaLock, FaFacebook, FaSpinner } from 'react-icons/fa'; // FaSpinner add kiya
+import { FaRegUser, FaLock, FaFacebook, FaSpinner } from 'react-icons/fa';
 import { FcGoogle } from 'react-icons/fc';
+import { API_BASE_URL } from '../config';
+import { setAuthSession } from '../utils/auth';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false); // Loading state
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   // --- COMMON ROUTING LOGIC ---
-  const handleRouting = (role, is_profile_complete) => {
+  const handleRouting = (role) => {
     if (!role || role === "null") {
       navigate('/select-role');
-    } else if (role === 'employee') {
-      is_profile_complete ? navigate('/employee/dashboard') : navigate('/employee/profile');
+    } else if (role === 'jobseeker' || role === 'employee') {
+      navigate('/jobseeker/dashboard');
     } else if (role === 'recruiter') {
       navigate('/recruiter/dashboard');
     }
@@ -31,15 +33,13 @@ export default function Login() {
     formData.append('password', password);
 
     try {
-      const response = await axios.post('https://intelligent-hiring-gateway.onrender.com/auth/login', formData);
-      const { user_id, role, is_profile_complete } = response.data; 
-      
-      localStorage.setItem('user_id', user_id);
-      if (role) localStorage.setItem('role', role);
+      const response = await axios.post(`${API_BASE_URL}/auth/login`, formData);
+      const { access_token, user_id, role, name, is_profile_complete } = response.data;
 
-      handleRouting(role, is_profile_complete);
+      setAuthSession({ access_token, user_id, role, name, email });
+      handleRouting(role);
     } catch (error) {
-      alert(error.response?.status === 400 ? 'Invalid email or password' : 'Login failed!');
+      alert(error.response?.data?.detail || (error.response?.status === 400 ? 'Invalid email or password' : 'Login failed!'));
     } finally {
       setLoading(false);
     }
@@ -50,23 +50,19 @@ export default function Login() {
     onSuccess: async (tokenResponse) => {
       setLoading(true);
       try {
-        // 1. Google se user data lana
         const userInfo = await axios.get(
           'https://www.googleapis.com/oauth2/v3/userinfo',
           { headers: { Authorization: `Bearer ${tokenResponse.access_token}` } }
         );
-        
-        // 2. Apne backend ko bhejna
-        const response = await axios.post('https://intelligent-hiring-gateway.onrender.com/auth/google', {
+
+        const response = await axios.post(`${API_BASE_URL}/auth/google`, {
           email: userInfo.data.email,
           name: userInfo.data.name
         });
 
-        const { user_id, role, is_profile_complete } = response.data;
-        localStorage.setItem('user_id', user_id);
-        if (role) localStorage.setItem('role', role);
-
-        handleRouting(role, is_profile_complete);
+        const { access_token, user_id, role, name, is_profile_complete } = response.data;
+        setAuthSession({ access_token, user_id, role, name: name || userInfo.data.name, email: userInfo.data.email });
+        handleRouting(role);
       } catch (error) {
         console.error("Google Auth Error:", error);
         alert("Google Login Failed!");
@@ -87,7 +83,7 @@ export default function Login() {
         <div className="w-full md:w-1/2 p-10 md:p-16 flex flex-col justify-center">
           <div className="text-center mb-8">
             <h2 className="text-3xl font-black text-gray-900 mb-2">LOGIN</h2>
-            <p className="text-sm text-gray-500 font-medium">Get started with your AI career portal</p>
+            <p className="text-sm text-gray-500 font-medium">Access your AI recruitment & career portal</p>
           </div>
           
           <form onSubmit={handleLogin} className="space-y-5">
@@ -118,14 +114,14 @@ export default function Login() {
                 type="submit" disabled={loading}
                 className="w-full bg-[#6e4ef2] text-white font-bold py-3 rounded-xl hover:bg-[#5a3edb] shadow-lg transition duration-300 flex justify-center items-center"
               >
-                {loading ? <FaSpinner className="animate-spin mr-2" /> : "Login Now"}
+                {loading ? <FaSpinner className="animate-spin mr-2" /> : "Sign In to Gateway"}
               </button>
             </div>
           </form>
 
           <div className="flex items-center my-6">
             <div className="flex-1 border-t border-gray-200"></div>
-            <span className="px-3 text-sm text-gray-400 font-medium">Login with Others</span>
+            <span className="px-3 text-sm text-gray-400 font-medium">Or continue with</span>
             <div className="flex-1 border-t border-gray-200"></div>
           </div>
 
@@ -138,20 +134,14 @@ export default function Login() {
             >
               <FcGoogle className="text-xl" /> Login with Google
             </button>
-            <button 
-              type="button" 
-              className="w-full flex items-center justify-center gap-2 bg-white border border-gray-200 text-gray-700 font-bold py-3 rounded-xl hover:bg-gray-50 transition"
-            >
-              <FaFacebook className="text-blue-600 text-xl" /> Login with Facebook
-            </button>
           </div>
 
           <p className="mt-8 text-center text-sm text-gray-600 font-medium">
-            Don't have an account? <Link to="/signup" className="text-[#6e4ef2] hover:underline">Sign up</Link>
+            Don't have an account? <Link to="/signup" className="text-[#6e4ef2] font-bold hover:underline">Sign up now</Link>
           </p>
         </div>
 
-        {/* RIGHT SIDE: Graphic (Same design) */}
+        {/* RIGHT SIDE: Graphic */}
         <div className="hidden md:flex w-1/2 bg-[#6e4ef2] relative items-center justify-center p-12 overflow-hidden">
           <div className="absolute top-[-10%] left-[-10%] w-[120%] h-[120%] border-[40px] border-white opacity-5 rounded-[40%] animate-[spin_60s_linear_infinite]"></div>
           <div className="absolute top-[-20%] left-[-20%] w-[140%] h-[140%] border-[20px] border-white opacity-5 rounded-[30%] animate-[spin_80s_linear_infinite_reverse]"></div>
