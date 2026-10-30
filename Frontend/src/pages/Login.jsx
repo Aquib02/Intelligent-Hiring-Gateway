@@ -2,7 +2,11 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { useGoogleLogin } from '@react-oauth/google';
-import { FaRegUser, FaLock, FaFacebook, FaSpinner } from 'react-icons/fa';
+import { 
+  FaRegUser, FaLock, FaSpinner, FaEye, FaEyeSlash, 
+  FaLaptopCode, FaUserTie, FaCheckCircle, FaShieldAlt, 
+  FaMagic, FaArrowRight, FaBolt, FaAward
+} from 'react-icons/fa';
 import { FcGoogle } from 'react-icons/fc';
 import { API_BASE_URL } from '../config';
 import { setAuthSession } from '../utils/auth';
@@ -10,10 +14,13 @@ import { setAuthSession } from '../utils/auth';
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [selectedRolePreview, setSelectedRolePreview] = useState('jobseeker'); // 'jobseeker' | 'recruiter'
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
   const navigate = useNavigate();
 
-  // --- COMMON ROUTING LOGIC ---
+  // Common routing logic
   const handleRouting = (role) => {
     if (!role || role === "null") {
       navigate('/select-role');
@@ -24,31 +31,34 @@ export default function Login() {
     }
   };
 
-  // --- NORMAL EMAIL LOGIN ---
+  // Normal Email/Password Login
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setErrorMsg('');
+
     const formData = new FormData();
     formData.append('email', email);
     formData.append('password', password);
 
     try {
       const response = await axios.post(`${API_BASE_URL}/auth/login`, formData);
-      const { access_token, user_id, role, name, is_profile_complete } = response.data;
+      const { access_token, user_id, role, name } = response.data;
 
       setAuthSession({ access_token, user_id, role, name, email });
       handleRouting(role);
     } catch (error) {
-      alert(error.response?.data?.detail || (error.response?.status === 400 ? 'Invalid email or password' : 'Login failed!'));
+      setErrorMsg(error.response?.data?.detail || 'Invalid email or password. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  // --- UPDATED GOOGLE LOGIN ---
+  // Google Login
   const handleGoogleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       setLoading(true);
+      setErrorMsg('');
       try {
         const userInfo = await axios.get(
           'https://www.googleapis.com/oauth2/v3/userinfo',
@@ -60,101 +70,278 @@ export default function Login() {
           name: userInfo.data.name
         });
 
-        const { access_token, user_id, role, name, is_profile_complete } = response.data;
+        const { access_token, user_id, role, name } = response.data;
         setAuthSession({ access_token, user_id, role, name: name || userInfo.data.name, email: userInfo.data.email });
         handleRouting(role);
       } catch (error) {
         console.error("Google Auth Error:", error);
-        alert("Google Login Failed!");
+        setErrorMsg("Google authentication failed. Please try again.");
       } finally {
         setLoading(false);
       }
     },
   });
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-[#f0f2ff] p-4 relative overflow-hidden">
-      <div className="absolute top-10 left-10 w-24 h-24 bg-[#6e4ef2] rounded-full mix-blend-multiply filter blur-xl opacity-50"></div>
-      <div className="absolute bottom-10 right-10 w-32 h-32 bg-white rounded-full mix-blend-multiply filter blur-xl opacity-50"></div>
+  // 1-Click Quick Fill Demo Credentials (For instant evaluation)
+  const fillDemo = (roleType) => {
+    if (roleType === 'jobseeker') {
+      setEmail('candidate.demo@gateway.ai');
+      setPassword('CandidatePass123!');
+      setSelectedRolePreview('jobseeker');
+    } else {
+      setEmail('recruiter.demo@gateway.ai');
+      setPassword('RecruiterPass123!');
+      setSelectedRolePreview('recruiter');
+    }
+  };
 
-      <div className="w-full max-w-5xl bg-white rounded-3xl shadow-2xl flex overflow-hidden z-10">
+  return (
+    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4 relative overflow-hidden font-sans selection:bg-purple-600 selection:text-white">
+      
+      {/* Background Animated Glow Spheres */}
+      <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-purple-600/20 rounded-full blur-[120px] pointer-events-none animate-pulse"></div>
+      <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-indigo-600/20 rounded-full blur-[120px] pointer-events-none"></div>
+
+      {/* Main Glassmorphic Card Container */}
+      <div className="w-full max-w-5xl bg-slate-900/90 border border-slate-800/80 rounded-3xl shadow-2xl backdrop-blur-xl flex flex-col md:flex-row overflow-hidden z-10">
         
-        {/* LEFT SIDE: Form */}
-        <div className="w-full md:w-1/2 p-10 md:p-16 flex flex-col justify-center">
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-black text-gray-900 mb-2">LOGIN</h2>
-            <p className="text-sm text-gray-500 font-medium">Access your AI recruitment & career portal</p>
-          </div>
+        {/* ==================================================== */}
+        {/* LEFT SIDE: INTERACTIVE FORM & CONTROLS */}
+        {/* ==================================================== */}
+        <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center">
           
-          <form onSubmit={handleLogin} className="space-y-5">
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
-                <FaRegUser />
+          {/* Header */}
+          <div className="mb-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 text-xs font-bold mb-3">
+              <FaBolt className="text-amber-400" />
+              <span>Next-Gen AI Recruitment Platform</span>
+            </div>
+            <h2 className="text-3xl font-black text-white tracking-tight">Welcome Back</h2>
+            <p className="text-xs text-slate-400 mt-1">
+              Sign in to access your intelligent career gateway or hiring board.
+            </p>
+          </div>
+
+          {/* Quick Demo Autofill Pills (Interactive) */}
+          <div className="mb-6 p-3 bg-slate-950/80 border border-slate-800 rounded-2xl">
+            <div className="flex items-center justify-between text-[11px] text-slate-400 mb-2 font-medium">
+              <span>Quick Demo Fill:</span>
+              <span className="text-purple-400 text-[10px] uppercase font-bold">1-Click Test</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => fillDemo('jobseeker')}
+                className="py-1.5 px-3 rounded-xl bg-slate-900 hover:bg-purple-950/50 hover:border-purple-500/40 border border-slate-800 text-[11px] font-bold text-slate-300 transition flex items-center justify-center gap-1.5"
+              >
+                <FaLaptopCode className="text-purple-400" /> Job Seeker Demo
+              </button>
+              <button
+                type="button"
+                onClick={() => fillDemo('recruiter')}
+                className="py-1.5 px-3 rounded-xl bg-slate-900 hover:bg-indigo-950/50 hover:border-indigo-500/40 border border-slate-800 text-[11px] font-bold text-slate-300 transition flex items-center justify-center gap-1.5"
+              >
+                <FaUserTie className="text-blue-400" /> Recruiter Demo
+              </button>
+            </div>
+          </div>
+
+          {/* Error Message Toast */}
+          {errorMsg && (
+            <div className="mb-4 p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-xs text-rose-300 font-semibold flex items-center gap-2">
+              <span>⚠️</span>
+              <span>{errorMsg}</span>
+            </div>
+          )}
+
+          {/* Form */}
+          <form onSubmit={handleLogin} className="space-y-4">
+            
+            {/* Email Field */}
+            <div>
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                Email Address
+              </label>
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500 group-focus-within:text-purple-400 transition">
+                  <FaRegUser className="text-xs" />
+                </div>
+                <input 
+                  type="email" 
+                  value={email} 
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2.5 bg-slate-950 border border-slate-800 text-slate-200 rounded-xl text-xs outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition font-medium" 
+                  placeholder="name@company.com" 
+                  required 
+                />
               </div>
-              <input 
-                type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-11 pr-4 py-3 bg-[#f5f6fa] text-gray-800 rounded-xl outline-none focus:ring-2 focus:ring-[#6e4ef2] transition" 
-                placeholder="Username or Email" required 
-              />
             </div>
             
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
-                <FaLock />
+            {/* Password Field with Eye Toggle */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                  Password
+                </label>
+                <span className="text-[10px] text-purple-400 hover:underline cursor-pointer">
+                  Forgot password?
+                </span>
               </div>
-              <input 
-                type="password" value={password} onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-11 pr-4 py-3 bg-[#f5f6fa] text-gray-800 rounded-xl outline-none focus:ring-2 focus:ring-[#6e4ef2] transition" 
-                placeholder="Password" required 
-              />
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500 group-focus-within:text-purple-400 transition">
+                  <FaLock className="text-xs" />
+                </div>
+                <input 
+                  type={showPassword ? "text" : "password"} 
+                  value={password} 
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full pl-9 pr-10 py-2.5 bg-slate-950 border border-slate-800 text-slate-200 rounded-xl text-xs outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition font-medium" 
+                  placeholder="Enter your password" 
+                  required 
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-500 hover:text-slate-300 transition"
+                  tabIndex={-1}
+                >
+                  {showPassword ? <FaEyeSlash className="text-xs" /> : <FaEye className="text-xs" />}
+                </button>
+              </div>
             </div>
 
+            {/* Submit Button */}
             <div className="pt-2">
               <button 
-                type="submit" disabled={loading}
-                className="w-full bg-[#6e4ef2] text-white font-bold py-3 rounded-xl hover:bg-[#5a3edb] shadow-lg transition duration-300 flex justify-center items-center"
+                type="submit" 
+                disabled={loading}
+                className="w-full bg-gradient-to-r from-purple-600 via-purple-500 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold py-3 rounded-xl shadow-lg shadow-purple-600/30 hover:shadow-purple-600/50 transition duration-300 flex justify-center items-center gap-2 text-xs"
               >
-                {loading ? <FaSpinner className="animate-spin mr-2" /> : "Sign In to Gateway"}
+                {loading ? <FaSpinner className="animate-spin text-sm" /> : <FaArrowRight className="text-xs" />}
+                {loading ? "Authenticating with Bcrypt..." : "Sign In to Gateway"}
               </button>
             </div>
           </form>
 
-          <div className="flex items-center my-6">
-            <div className="flex-1 border-t border-gray-200"></div>
-            <span className="px-3 text-sm text-gray-400 font-medium">Or continue with</span>
-            <div className="flex-1 border-t border-gray-200"></div>
+          {/* Social Login Separator */}
+          <div className="flex items-center my-5">
+            <div className="flex-1 border-t border-slate-800"></div>
+            <span className="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-500">Or continue with</span>
+            <div className="flex-1 border-t border-slate-800"></div>
           </div>
 
-          <div className="space-y-3">
-            <button 
-              onClick={() => handleGoogleLogin()} 
-              disabled={loading}
-              type="button" 
-              className="w-full flex items-center justify-center gap-2 bg-white border border-gray-200 text-gray-700 font-bold py-3 rounded-xl hover:bg-gray-50 transition"
-            >
-              <FcGoogle className="text-xl" /> Login with Google
-            </button>
-          </div>
+          {/* Google Login Button */}
+          <button 
+            onClick={() => handleGoogleLogin()} 
+            disabled={loading}
+            type="button" 
+            className="w-full flex items-center justify-center gap-2 bg-slate-950 hover:bg-slate-800/80 border border-slate-800 text-slate-300 font-bold py-2.5 rounded-xl transition text-xs shadow-sm hover:border-slate-700"
+          >
+            <FcGoogle className="text-base" /> Login with Google Workspace
+          </button>
 
-          <p className="mt-8 text-center text-sm text-gray-600 font-medium">
-            Don't have an account? <Link to="/signup" className="text-[#6e4ef2] font-bold hover:underline">Sign up now</Link>
+          {/* Link to Signup */}
+          <p className="mt-6 text-center text-xs text-slate-400 font-medium">
+            New to Intelligent Hiring Gateway?{' '}
+            <Link to="/signup" className="text-purple-400 font-bold hover:underline">
+              Create an account
+            </Link>
           </p>
         </div>
 
-        {/* RIGHT SIDE: Graphic */}
-        <div className="hidden md:flex w-1/2 bg-[#6e4ef2] relative items-center justify-center p-12 overflow-hidden">
-          <div className="absolute top-[-10%] left-[-10%] w-[120%] h-[120%] border-[40px] border-white opacity-5 rounded-[40%] animate-[spin_60s_linear_infinite]"></div>
-          <div className="absolute top-[-20%] left-[-20%] w-[140%] h-[140%] border-[20px] border-white opacity-5 rounded-[30%] animate-[spin_80s_linear_infinite_reverse]"></div>
-          <div className="relative z-10 w-full max-w-sm h-full max-h-[500px] rounded-3xl border border-white/20 bg-white/10 backdrop-blur-sm shadow-2xl overflow-hidden flex items-end justify-center">
-            <img 
-              src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" 
-              alt="Professional" className="w-full h-[90%] object-cover object-top"
-            />
-            <div className="absolute left-[-20px] top-1/2 transform -translate-y-1/2 bg-white w-12 h-12 rounded-full shadow-xl flex items-center justify-center z-20">
-              <span className="text-yellow-500 text-2xl">⚡</span>
+        {/* ==================================================== */}
+        {/* RIGHT SIDE: INTERACTIVE AI FEATURE SHOWCASE */}
+        {/* ==================================================== */}
+        <div className="hidden md:flex w-1/2 bg-gradient-to-br from-purple-950/80 via-slate-900 to-indigo-950 p-10 flex-col justify-between border-l border-slate-800/80 relative overflow-hidden">
+          
+          {/* Subtle Decorative Pattern */}
+          <div className="absolute top-0 right-0 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+          {/* Role Preview Switcher */}
+          <div>
+            <div className="text-[10px] font-bold uppercase tracking-wider text-purple-400 mb-2">Interactive Preview</div>
+            <div className="flex items-center gap-2 bg-slate-950/60 p-1 rounded-xl border border-slate-800 w-fit">
+              <button
+                type="button"
+                onClick={() => setSelectedRolePreview('jobseeker')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                  selectedRolePreview === 'jobseeker'
+                    ? 'bg-purple-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <FaLaptopCode /> Job Seeker Experience
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedRolePreview('recruiter')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                  selectedRolePreview === 'recruiter'
+                    ? 'bg-purple-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <FaUserTie /> Recruiter Experience
+              </button>
             </div>
           </div>
+
+          {/* Dynamic Interactive Card Content */}
+          <div className="my-auto space-y-4">
+            {selectedRolePreview === 'jobseeker' ? (
+              <div className="space-y-3">
+                <div className="p-4 bg-slate-950/80 border border-purple-500/30 rounded-2xl backdrop-blur-md shadow-xl transform hover:scale-[1.02] transition">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] font-bold uppercase bg-purple-500/20 text-purple-300 px-2.5 py-0.5 rounded-full border border-purple-500/30">
+                      Live ATS Parser
+                    </span>
+                    <span className="text-xs font-black text-emerald-400">92% Match</span>
+                  </div>
+                  <p className="text-xs font-bold text-white">Full Stack AI Engineer at TechNova</p>
+                  <p className="text-[11px] text-slate-400 mt-1">Verified Skills: Python, React, FastAPI, SQL, Docker</p>
+                </div>
+
+                <div className="p-4 bg-slate-950/80 border border-slate-800 rounded-2xl backdrop-blur-md shadow-xl">
+                  <div className="flex items-center gap-2 text-xs font-bold text-white mb-1">
+                    <FaMagic className="text-purple-400" /> AI Executive Cover Letter
+                  </div>
+                  <p className="text-[11px] text-slate-400">Generate 1-click tailored executive cover letters matching any job description.</p>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="p-4 bg-slate-950/80 border border-indigo-500/30 rounded-2xl backdrop-blur-md shadow-xl transform hover:scale-[1.02] transition">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] font-bold uppercase bg-indigo-500/20 text-indigo-300 px-2.5 py-0.5 rounded-full border border-indigo-500/30">
+                      Smart Pipeline
+                    </span>
+                    <span className="text-xs font-bold text-amber-400">Shortlisted ⭐</span>
+                  </div>
+                  <p className="text-xs font-bold text-white">Candidate Ranking & Filtering</p>
+                  <p className="text-[11px] text-slate-400 mt-1">Filter top 5% candidates automatically sorted by ATS match scores.</p>
+                </div>
+
+                <div className="p-4 bg-slate-950/80 border border-slate-800 rounded-2xl backdrop-blur-md shadow-xl">
+                  <div className="flex items-center gap-2 text-xs font-bold text-white mb-1">
+                    <FaAward className="text-amber-400" /> AI Interview Prep Sheets
+                  </div>
+                  <p className="text-[11px] text-slate-400">Generate tailored behavioral and technical questions for candidates in 1-click.</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Footer Security Badges */}
+          <div className="pt-4 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400 font-medium">
+            <div className="flex items-center gap-1.5">
+              <FaShieldAlt className="text-purple-400" />
+              <span>Bcrypt Salt + JWT Encryption</span>
+            </div>
+            <span>MySQL 5.6+ InnoDB</span>
+          </div>
+
         </div>
+
       </div>
     </div>
   );

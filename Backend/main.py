@@ -46,21 +46,40 @@ if GEMINI_API_KEY and genai:
     except Exception as e:
         print(f"Warning: Failed to initialize Gemini Client: {e}")
 
-# --- 2. Database Setup (MySQL) ---
-MYSQL_USER = os.getenv("MYSQL_USER", "root")
-MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD", "123456")
-MYSQL_HOST = os.getenv("MYSQL_HOST", "localhost")
-MYSQL_PORT = os.getenv("MYSQL_PORT", "3306")
-MYSQL_DB = os.getenv("MYSQL_DB", "ihg_db")
+# --- 2. Database Setup (MySQL with Cloud / Render Compatibility) ---
+DATABASE_URL = os.getenv("DATABASE_URL")
 
-SQLALCHEMY_DATABASE_URL = (
-    f"mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DB}?charset=utf8mb4"
-)
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL,
-    pool_recycle=3600,
-    pool_pre_ping=True
-)
+if DATABASE_URL:
+    # Render / Cloud MySQL URI normalization
+    if DATABASE_URL.startswith("mysql://"):
+        DATABASE_URL = DATABASE_URL.replace("mysql://", "mysql+pymysql://", 1)
+    elif DATABASE_URL.startswith("postgres://"):
+        DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+    SQLALCHEMY_DATABASE_URL = DATABASE_URL
+else:
+    MYSQL_USER = os.getenv("MYSQL_USER", "root")
+    MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD", "123456")
+    MYSQL_HOST = os.getenv("MYSQL_HOST", "localhost")
+    MYSQL_PORT = os.getenv("MYSQL_PORT", "3306")
+    MYSQL_DB = os.getenv("MYSQL_DB", "ihg_db")
+    SQLALCHEMY_DATABASE_URL = (
+        f"mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DB}?charset=utf8mb4"
+    )
+
+# Resilient Engine Setup: Connects to MySQL; if unreachable on cloud/Render, safely falls back
+try:
+    engine = create_engine(
+        SQLALCHEMY_DATABASE_URL,
+        pool_recycle=3600,
+        pool_pre_ping=True
+    )
+    with engine.connect() as test_conn:
+        pass
+    print("Database connected successfully!")
+except Exception as db_err:
+    print(f"Warning: Remote MySQL not reachable ({db_err}). Running resilient cloud fallback.")
+    SQLALCHEMY_DATABASE_URL = "sqlite:///./ihg_cloud.db"
+    engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
