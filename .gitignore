@@ -1,50 +1,116 @@
-# Logs
-logs
-*.log
+# ==============================================================================
+#                   INTELLIGENT HIRING GATEWAY .GITIGNORE
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 1. SENSITIVE CREDENTIALS & SECRETS (NEVER COMMIT TO GITHUB)
+# ------------------------------------------------------------------------------
+.env
+.env.*
+*.env
+Backend/.env
+Backend/.env.local
+Frontend/.env
+Frontend/.env.local
+Frontend/.env.production
+!.env.example
+!Backend/.env.example
+
+# ------------------------------------------------------------------------------
+# 2. PRIVATE USER UPLOADS & RESUMES (GDPR / PRIVACY SECURITY)
+# ------------------------------------------------------------------------------
+# Ignore all uploaded candidate PDFs, keep only .gitkeep
+Backend/resumes/*
+!Backend/resumes/.gitkeep
+resumes/*
+!resumes/.gitkeep
+*.pdf
+
+# ------------------------------------------------------------------------------
+# 3. DATABASE FILES & BACKUPS
+# ------------------------------------------------------------------------------
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.sql
+*.dump
+
+# ------------------------------------------------------------------------------
+# 4. PYTHON VIRTUAL ENVIRONMENTS & COMPILED BYTECODE
+# ------------------------------------------------------------------------------
+venv/
+.venv/
+env/
+ENV/
+Backend/venv/
+Backend/.venv/
+__pycache__/
+Backend/__pycache__/
+*/__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.pytest_cache/
+.mypy_cache/
+
+# ------------------------------------------------------------------------------
+# 5. NODE.JS & FRONTEND ARTIFACTS
+# ------------------------------------------------------------------------------
+node_modules/
+Frontend/node_modules/
+Frontend/dist/
+Frontend/dist-ssr/
+Frontend/.vite/
+.vite/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
+# ------------------------------------------------------------------------------
+# 6. OPERATING SYSTEM & IDE ARTIFACTS
+# ------------------------------------------------------------------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
 
-# Editor directories and files
 .vscode/*
 !.vscode/extensions.json
-.idea
-.DS_Store
+.idea/
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+*~
 
-# Backend
-Backend/.env
-Backend/venv/
-Backend/__pycache__/
-Backend/*.db
-*.pyc
-
-# Frontend
-Frontend/node_modules/
-Frontend/dist/
-Frontend/dist-ssr/
-
-# Logs
-*.log
+# ------------------------------------------------------------------------------
+# 7. LOGS & TEMPORARY FILES
+# ------------------------------------------------------------------------------
 logs/
-
-# Editor
-.vscode/
-.idea/
-.DS_Store
-
-# Environment files
-.env
-.env.*
-!.env.example
+*.log
+temp/
+tmp/
