@@ -269,21 +269,31 @@ export default function JobSeekerDashboard() {
 
   const handleSaveProfile = async (e) => {
     e.preventDefault();
+    if (!employeeId) {
+      alert("⚠️ User ID not found. Please log in again.");
+      return;
+    }
     setSavingProfile(true);
 
     const formData = new FormData();
     formData.append('user_id', employeeId);
     Object.keys(profileForm).forEach(k => {
-      formData.append(k, profileForm[k]);
+      formData.append(k, profileForm[k] !== undefined && profileForm[k] !== null ? profileForm[k] : '');
     });
 
     try {
-      await axios.post(`${API_BASE_URL}/employee/profile`, formData);
+      const res = await axios.post(`${API_BASE_URL}/employee/profile`, formData);
       alert("✅ Profile updated successfully!");
+      if (res.data?.user?.name) {
+        localStorage.setItem('user_name', res.data.user.name);
+      }
       fetchProfile();
       fetchAnalytics();
     } catch (err) {
-      alert("Failed to update profile.");
+      const errMsg = err.response?.data?.detail 
+        ? (typeof err.response.data.detail === 'string' ? err.response.data.detail : JSON.stringify(err.response.data.detail))
+        : (err.message || "Failed to update profile.");
+      alert(`⚠️ Update failed: ${errMsg}`);
     } finally {
       setSavingProfile(false);
     }
@@ -1124,6 +1134,43 @@ export default function JobSeekerDashboard() {
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white outline-none focus:border-purple-500"
                   />
                 </div>
+              </div>
+
+              {/* Education & Address Fields */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Highest Education / Degree</label>
+                  <input
+                    type="text"
+                    value={profileForm.education}
+                    onChange={(e) => setProfileForm({ ...profileForm, education: e.target.value })}
+                    placeholder="e.g. B.Tech Computer Science"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white outline-none focus:border-purple-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Current City / Location</label>
+                  <input
+                    type="text"
+                    value={profileForm.address}
+                    onChange={(e) => setProfileForm({ ...profileForm, address: e.target.value })}
+                    placeholder="e.g. Bengaluru, Karnataka"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white outline-none focus:border-purple-500"
+                  />
+                </div>
+              </div>
+
+              {/* Skills Field */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Key Technical Skills (Comma-separated)</label>
+                <input
+                  type="text"
+                  value={profileForm.skills_manual}
+                  onChange={(e) => setProfileForm({ ...profileForm, skills_manual: e.target.value })}
+                  placeholder="e.g. React, Node.js, Python, FastAPI, Docker, SQL, Tailwind"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white outline-none focus:border-purple-500"
+                />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

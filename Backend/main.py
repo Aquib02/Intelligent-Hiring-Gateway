@@ -651,47 +651,64 @@ def set_user_role(
 @app.post("/employee/profile")
 async def update_profile(
     user_id: int = Form(...),
-    name: str = Form(...),
-    address: str = Form(...),
-    education: str = Form(...),
-    gender: str = Form(...),
-    mobile: str = Form(...),
-    experience: str = Form(None),
-    current_role: str = Form(None),
-    preferred_role: str = Form(None),
-    skills_manual: str = Form(None),
-    preferred_location: str = Form(None),
-    job_type: str = Form(None),
-    expected_salary: str = Form(None),
-    availability: str = Form(None),
-    github: str = Form(None),
-    linkedin: str = Form(None),
-    portfolio: str = Form(None),
-    projects: str = Form(None),
-    resume: UploadFile = File(None),
+    name: Optional[str] = Form(None),
+    address: Optional[str] = Form(""),
+    education: Optional[str] = Form(""),
+    gender: Optional[str] = Form("Male"),
+    mobile: Optional[str] = Form(""),
+    experience: Optional[str] = Form(""),
+    current_role: Optional[str] = Form(""),
+    preferred_role: Optional[str] = Form(""),
+    skills_manual: Optional[str] = Form(""),
+    preferred_location: Optional[str] = Form(""),
+    job_type: Optional[str] = Form("Full-time"),
+    expected_salary: Optional[str] = Form(""),
+    availability: Optional[str] = Form("Immediate"),
+    github: Optional[str] = Form(""),
+    linkedin: Optional[str] = Form(""),
+    portfolio: Optional[str] = Form(""),
+    projects: Optional[str] = Form(""),
+    resume: Optional[UploadFile] = File(None),
     db: Session = Depends(get_db)
 ):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    user.name = name
-    user.address = address
-    user.education = education
-    user.gender = gender
-    user.mobile = mobile
-    user.experience = experience
-    user.current_role = current_role
-    user.preferred_role = preferred_role
-    user.skills_manual = skills_manual
-    user.preferred_location = preferred_location
-    user.job_type = job_type
-    user.expected_salary = expected_salary
-    user.availability = availability
-    user.github = github
-    user.linkedin = linkedin
-    user.portfolio = portfolio
-    user.projects = projects
+    if name is not None and name.strip():
+        user.name = name.strip()
+    if address is not None:
+        user.address = address
+    if education is not None:
+        user.education = education
+    if gender is not None:
+        user.gender = gender
+    if mobile is not None:
+        user.mobile = mobile
+    if experience is not None:
+        user.experience = experience
+    if current_role is not None:
+        user.current_role = current_role
+    if preferred_role is not None:
+        user.preferred_role = preferred_role
+    if skills_manual is not None:
+        user.skills_manual = skills_manual
+    if preferred_location is not None:
+        user.preferred_location = preferred_location
+    if job_type is not None:
+        user.job_type = job_type
+    if expected_salary is not None:
+        user.expected_salary = expected_salary
+    if availability is not None:
+        user.availability = availability
+    if github is not None:
+        user.github = github
+    if linkedin is not None:
+        user.linkedin = linkedin
+    if portfolio is not None:
+        user.portfolio = portfolio
+    if projects is not None:
+        user.projects = projects
 
     ai_skills = user.skills or ""
     if resume and resume.filename:
@@ -705,7 +722,53 @@ async def update_profile(
         user.skills = ai_skills
 
     db.commit()
-    return {"message": "Profile updated successfully", "extracted_skills": ai_skills}
+    db.refresh(user)
+    return {
+        "message": "Profile updated successfully", 
+        "extracted_skills": ai_skills,
+        "user": {
+            "id": user.id,
+            "name": user.name,
+            "email": user.email,
+            "current_role": user.current_role,
+            "experience": user.experience,
+            "mobile": user.mobile,
+            "education": user.education,
+            "address": user.address
+        }
+    }
+
+
+@app.put("/user/{user_id}")
+@app.post("/employee/profile-json")
+def update_user_profile_json(
+    user_id: int, 
+    data: dict = Body(...), 
+    db: Session = Depends(get_db)
+):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    for key, val in data.items():
+        if hasattr(user, key) and key not in ["id", "password", "email"]:
+            setattr(user, key, val)
+            
+    db.commit()
+    db.refresh(user)
+    return {
+        "message": "Profile updated successfully", 
+        "user": {
+            "id": user.id,
+            "name": user.name,
+            "email": user.email,
+            "current_role": user.current_role,
+            "experience": user.experience,
+            "mobile": user.mobile,
+            "education": user.education,
+            "address": user.address
+        }
+    }
 
 
 @app.post("/employee/upload-resume")
