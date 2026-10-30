@@ -377,16 +377,23 @@ def register(
     email: str = Form(...),
     password: str = Form(...),
     role: Optional[str] = Form("jobseeker"),
+    name: Optional[str] = Form(None),
     db: Session = Depends(get_db)
 ):
-    existing_user = db.query(User).filter(User.email == email).first()
+    cleaned_email = email.strip().lower()
+    existing_user = db.query(User).filter(User.email == cleaned_email).first()
     if existing_user:
         raise HTTPException(status_code=400, detail="Email already registered")
 
     # Hash with Bcrypt
     hashed_pwd = hash_password(password)
     assigned_role = "jobseeker" if role in ["jobseeker", "employee"] else "recruiter"
-    new_user = User(email=email, password=hashed_pwd, role=assigned_role)
+    new_user = User(
+        email=cleaned_email,
+        password=hashed_pwd,
+        role=assigned_role,
+        name=name.strip() if name else None
+    )
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
@@ -399,7 +406,8 @@ def register(
         "token_type": "bearer",
         "user_id": new_user.id,
         "role": new_user.role,
-        "email": new_user.email
+        "email": new_user.email,
+        "name": new_user.name or new_user.email.split("@")[0]
     }
 
 
@@ -409,7 +417,8 @@ def login(
     password: str = Form(...),
     db: Session = Depends(get_db)
 ):
-    user = db.query(User).filter(User.email == email).first()
+    cleaned_email = email.strip().lower()
+    user = db.query(User).filter(User.email == cleaned_email).first()
     if not user or not verify_password(password, user.password):
         raise HTTPException(status_code=400, detail="Invalid email or password")
 

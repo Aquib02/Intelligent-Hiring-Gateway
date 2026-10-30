@@ -4,12 +4,13 @@ import axios from 'axios';
 import { 
   FaEnvelope, FaLock, FaSpinner, FaUserTie, FaLaptopCode, 
   FaCheckCircle, FaEye, FaEyeSlash, FaShieldAlt, FaMagic, 
-  FaArrowRight, FaCheck, FaTimes, FaBolt, FaStar
+  FaArrowRight, FaCheck, FaTimes, FaBolt, FaStar, FaUser, FaRegUser
 } from 'react-icons/fa';
 import { API_BASE_URL } from '../config';
 import { setAuthSession } from '../utils/auth';
 
 export default function Signup() {
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -38,6 +39,12 @@ export default function Signup() {
     e.preventDefault();
     setErrorMsg('');
 
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail) {
+      setErrorMsg("Please enter a valid work or personal email address.");
+      return;
+    }
+
     if (password !== confirmPassword) {
       setErrorMsg("Passwords do not match. Please verify.");
       return;
@@ -51,15 +58,24 @@ export default function Signup() {
     setLoading(true);
 
     const formData = new FormData();
-    formData.append('email', email);
+    formData.append('email', cleanEmail);
     formData.append('password', password);
     formData.append('role', role);
+    if (name.trim()) {
+      formData.append('name', name.trim());
+    }
 
     try {
       const response = await axios.post(`${API_BASE_URL}/auth/register`, formData);
-      const { access_token, user_id, role: assignedRole } = response.data;
+      const { access_token, user_id, role: assignedRole, name: registeredName } = response.data;
 
-      setAuthSession({ access_token, user_id, role: assignedRole, email });
+      setAuthSession({ 
+        access_token, 
+        user_id, 
+        role: assignedRole, 
+        name: registeredName || name.trim() || cleanEmail.split('@')[0], 
+        email: cleanEmail 
+      });
 
       if (assignedRole === 'recruiter') {
         navigate('/recruiter/dashboard');
@@ -67,7 +83,7 @@ export default function Signup() {
         navigate('/jobseeker/dashboard');
       }
     } catch (error) {
-      setErrorMsg(error.response?.data?.detail || 'Registration failed. This email may already be registered.');
+      setErrorMsg(error.response?.data?.detail || 'Registration failed. This email may already be registered. Try signing in.');
     } finally {
       setLoading(false);
     }
@@ -166,15 +182,31 @@ export default function Signup() {
         {/* ==================================================== */}
         <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center">
           
-          <div className="mb-6">
-            <h2 className="text-2xl font-black text-white tracking-tight">Select Account Type</h2>
+          {/* Dual Navigation Switcher Tabs (Sign In / Sign Up) */}
+          <div className="flex items-center gap-2 p-1 bg-slate-950/80 border border-slate-800 rounded-2xl mb-6">
+            <Link
+              to="/login"
+              className="flex-1 py-2 rounded-xl text-xs font-bold text-center text-slate-400 hover:text-white hover:bg-slate-900 transition flex items-center justify-center gap-1.5"
+            >
+              <FaLock className="text-xs" /> Sign In (Login)
+            </Link>
+            <Link
+              to="/signup"
+              className="flex-1 py-2 rounded-xl text-xs font-bold text-center bg-purple-600 text-white shadow-md shadow-purple-600/30 flex items-center justify-center gap-1.5 transition"
+            >
+              <FaRegUser className="text-xs" /> Sign Up (Register)
+            </Link>
+          </div>
+
+          <div className="mb-5">
+            <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight">Create Your Account</h2>
             <p className="text-xs text-slate-400 mt-1">
-              Choose your role to customize your workspace experience.
+              Select your role to activate your intelligent AI workspace.
             </p>
           </div>
 
           {/* Interactive Role Switcher Cards */}
-          <div className="grid grid-cols-2 gap-3 mb-6">
+          <div className="grid grid-cols-2 gap-3 mb-5">
             <button
               type="button"
               onClick={() => setRole('jobseeker')}
@@ -213,11 +245,30 @@ export default function Signup() {
           )}
 
           {/* Signup Form */}
-          <form onSubmit={handleSignup} className="space-y-4">
+          <form onSubmit={handleSignup} className="space-y-3.5">
             
+            {/* Full Name Field */}
+            <div>
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                Full Name
+              </label>
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500 group-focus-within:text-purple-400 transition">
+                  <FaUser className="text-xs" />
+                </div>
+                <input 
+                  type="text" 
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2.5 bg-slate-950 border border-slate-800 text-slate-200 rounded-xl text-xs outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition font-medium" 
+                  placeholder={role === 'jobseeker' ? "e.g. Aman Sharma" : "e.g. Priya Verma"} 
+                />
+              </div>
+            </div>
+
             {/* Email Field */}
             <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
                 Work or Personal Email
               </label>
               <div className="relative group">
@@ -326,8 +377,8 @@ export default function Signup() {
           {/* Link to Login */}
           <p className="mt-6 text-center text-xs text-slate-400 font-medium">
             Already have an account?{' '}
-            <Link to="/" className="text-purple-400 font-bold hover:underline">
-              Sign in now
+            <Link to="/login" className="text-purple-400 font-bold hover:underline">
+              Sign in now (Login)
             </Link>
           </p>
 

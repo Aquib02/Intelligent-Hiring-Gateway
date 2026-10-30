@@ -11,9 +11,12 @@ function App() {
     <BrowserRouter>
       <div className="min-h-screen bg-slate-950 font-sans selection:bg-purple-500 selection:text-white">
         <Routes>
-          {/* Public Authentication Routes */}
+          {/* Public Authentication Routes (Direct Sign In / Login & Sign Up / Register) */}
           <Route path="/" element={<Login />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signin" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/register" element={<Signup />} />
 
           {/* Role Assignment */}
           <Route

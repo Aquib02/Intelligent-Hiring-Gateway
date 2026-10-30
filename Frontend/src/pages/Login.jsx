@@ -33,57 +33,66 @@ export default function Login() {
 
   // Normal Email/Password Login
   const handleLogin = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     setLoading(true);
     setErrorMsg('');
 
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail) {
+      setErrorMsg('Please enter your email address.');
+      setLoading(false);
+      return;
+    }
+
     const formData = new FormData();
-    formData.append('email', email);
+    formData.append('email', cleanEmail);
     formData.append('password', password);
 
     try {
       const response = await axios.post(`${API_BASE_URL}/auth/login`, formData);
       const { access_token, user_id, role, name } = response.data;
 
-      setAuthSession({ access_token, user_id, role, name, email });
+      setAuthSession({ access_token, user_id, role, name, email: cleanEmail });
       handleRouting(role);
     } catch (error) {
-      setErrorMsg(error.response?.data?.detail || 'Invalid email or password. Please try again.');
+      setErrorMsg(error.response?.data?.detail || 'Invalid email or password. Please verify credentials or register.');
     } finally {
       setLoading(false);
     }
   };
 
-  // Google Login
-  const handleGoogleLogin = useGoogleLogin({
-    onSuccess: async (tokenResponse) => {
-      setLoading(true);
-      setErrorMsg('');
-      try {
-        const userInfo = await axios.get(
-          'https://www.googleapis.com/oauth2/v3/userinfo',
-          { headers: { Authorization: `Bearer ${tokenResponse.access_token}` } }
-        );
+  // 1-Click Instant Demo Login (Authenticates directly with pre-seeded demo user)
+  const quickLogin = async (roleType) => {
+    setLoading(true);
+    setErrorMsg('');
 
-        const response = await axios.post(`${API_BASE_URL}/auth/google`, {
-          email: userInfo.data.email,
-          name: userInfo.data.name
-        });
+    const demoEmail = roleType === 'jobseeker' ? 'candidate.demo@gateway.ai' : 'recruiter.demo@gateway.ai';
+    const demoPass = roleType === 'jobseeker' ? 'CandidatePass123!' : 'RecruiterPass123!';
 
-        const { access_token, user_id, role, name } = response.data;
-        setAuthSession({ access_token, user_id, role, name: name || userInfo.data.name, email: userInfo.data.email });
-        handleRouting(role);
-      } catch (error) {
-        console.error("Google Auth Error:", error);
-        setErrorMsg("Google authentication failed. Please try again.");
-      } finally {
-        setLoading(false);
-      }
-    },
-  });
+    setEmail(demoEmail);
+    setPassword(demoPass);
+    setSelectedRolePreview(roleType);
 
-  // 1-Click Quick Fill Demo Credentials (For instant evaluation)
+    const formData = new FormData();
+    formData.append('email', demoEmail);
+    formData.append('password', demoPass);
+
+    try {
+      const response = await axios.post(`${API_BASE_URL}/auth/login`, formData);
+      const { access_token, user_id, role, name } = response.data;
+
+      setAuthSession({ access_token, user_id, role, name, email: demoEmail });
+      handleRouting(role);
+    } catch (error) {
+      setErrorMsg('Failed to log in with demo account. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 1-Click Quick Fill Demo Credentials (For manual review before submit)
   const fillDemo = (roleType) => {
+    setErrorMsg('');
     if (roleType === 'jobseeker') {
       setEmail('candidate.demo@gateway.ai');
       setPassword('CandidatePass123!');
@@ -110,36 +119,56 @@ export default function Login() {
         {/* ==================================================== */}
         <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center">
           
+          {/* Dual Navigation Switcher Tabs (Sign In / Sign Up) */}
+          <div className="flex items-center gap-2 p-1 bg-slate-950/80 border border-slate-800 rounded-2xl mb-6">
+            <Link
+              to="/login"
+              className="flex-1 py-2 rounded-xl text-xs font-bold text-center bg-purple-600 text-white shadow-md shadow-purple-600/30 flex items-center justify-center gap-1.5 transition"
+            >
+              <FaLock className="text-xs" /> Sign In (Login)
+            </Link>
+            <Link
+              to="/signup"
+              className="flex-1 py-2 rounded-xl text-xs font-bold text-center text-slate-400 hover:text-white hover:bg-slate-900 transition flex items-center justify-center gap-1.5"
+            >
+              <FaRegUser className="text-xs" /> Sign Up (Register)
+            </Link>
+          </div>
+
           {/* Header */}
-          <div className="mb-6">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 text-xs font-bold mb-3">
+          <div className="mb-5">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 text-xs font-bold mb-2">
               <FaBolt className="text-amber-400" />
               <span>Next-Gen AI Recruitment Platform</span>
             </div>
-            <h2 className="text-3xl font-black text-white tracking-tight">Welcome Back</h2>
+            <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight">Sign In to Gateway</h2>
             <p className="text-xs text-slate-400 mt-1">
-              Sign in to access your intelligent career gateway or hiring board.
+              Access your intelligent candidate portal or recruiter hiring workspace.
             </p>
           </div>
 
-          {/* Quick Demo Autofill Pills (Interactive) */}
-          <div className="mb-6 p-3 bg-slate-950/80 border border-slate-800 rounded-2xl">
-            <div className="flex items-center justify-between text-[11px] text-slate-400 mb-2 font-medium">
-              <span>Quick Demo Fill:</span>
-              <span className="text-purple-400 text-[10px] uppercase font-bold">1-Click Test</span>
+          {/* 1-Click Instant Demo Login (For seamless zero-typing evaluation) */}
+          <div className="mb-5 p-3.5 bg-slate-950/90 border border-purple-500/20 rounded-2xl shadow-inner">
+            <div className="flex items-center justify-between text-[11px] text-slate-300 mb-2 font-bold">
+              <span className="flex items-center gap-1.5 text-purple-300">
+                <FaBolt className="text-amber-400 text-xs" /> 1-Click Instant Demo Login:
+              </span>
+              <span className="text-[10px] text-slate-500 font-normal">Pre-seeded accounts</span>
             </div>
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
-                onClick={() => fillDemo('jobseeker')}
-                className="py-1.5 px-3 rounded-xl bg-slate-900 hover:bg-purple-950/50 hover:border-purple-500/40 border border-slate-800 text-[11px] font-bold text-slate-300 transition flex items-center justify-center gap-1.5"
+                onClick={() => quickLogin('jobseeker')}
+                disabled={loading}
+                className="py-2 px-3 rounded-xl bg-purple-950/40 hover:bg-purple-900/60 border border-purple-500/40 text-[11px] font-bold text-purple-200 transition flex items-center justify-center gap-1.5 shadow-sm active:scale-95"
               >
                 <FaLaptopCode className="text-purple-400" /> Job Seeker Demo
               </button>
               <button
                 type="button"
-                onClick={() => fillDemo('recruiter')}
-                className="py-1.5 px-3 rounded-xl bg-slate-900 hover:bg-indigo-950/50 hover:border-indigo-500/40 border border-slate-800 text-[11px] font-bold text-slate-300 transition flex items-center justify-center gap-1.5"
+                onClick={() => quickLogin('recruiter')}
+                disabled={loading}
+                className="py-2 px-3 rounded-xl bg-indigo-950/40 hover:bg-indigo-900/60 border border-indigo-500/40 text-[11px] font-bold text-indigo-200 transition flex items-center justify-center gap-1.5 shadow-sm active:scale-95"
               >
                 <FaUserTie className="text-blue-400" /> Recruiter Demo
               </button>
