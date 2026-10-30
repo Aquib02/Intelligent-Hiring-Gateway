@@ -442,6 +442,145 @@ def login(
     }
 
 
+@app.post("/auth/demo-login")
+def demo_login(
+    role: str = Form("jobseeker"),
+    db: Session = Depends(get_db)
+):
+    assigned_role = "recruiter" if role == "recruiter" else "jobseeker"
+    demo_email = "recruiter.demo@gateway.ai" if assigned_role == "recruiter" else "candidate.demo@gateway.ai"
+    demo_name = "Priya Verma" if assigned_role == "recruiter" else "Aman Sharma"
+
+    user = db.query(User).filter(User.email == demo_email).first()
+    if not user:
+        default_pwd = "RecruiterPass123!" if assigned_role == "recruiter" else "CandidatePass123!"
+        user = User(
+            email=demo_email,
+            password=hash_password(default_pwd),
+            role=assigned_role,
+            name=demo_name,
+            current_role="Talent Acquisition Lead" if assigned_role == "recruiter" else "Full Stack Developer",
+            skills="React, Python, FastAPI, MySQL, Tailwind CSS, Docker" if assigned_role == "jobseeker" else None
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
+    token = create_access_token({"sub": str(user.id), "role": user.role})
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "user_id": user.id,
+        "role": user.role,
+        "email": user.email,
+        "name": user.name or demo_name,
+        "is_profile_complete": True
+    }
+
+
+@app.on_event("startup")
+def auto_seed_production_db():
+    try:
+        db = SessionLocal()
+        # 1. Candidate Demo
+        cand = db.query(User).filter(User.email == "candidate.demo@gateway.ai").first()
+        if not cand:
+            cand = User(
+                email="candidate.demo@gateway.ai",
+                password=hash_password("CandidatePass123!"),
+                role="jobseeker",
+                name="Aman Sharma",
+                education="B.Tech Computer Science",
+                mobile="+91 98765 43210",
+                current_role="Full Stack Developer",
+                preferred_role="Senior Full Stack Engineer",
+                experience="3 Years",
+                preferred_location="Remote / Bengaluru",
+                skills="React, Node.js, Python, FastAPI, Docker, PostgreSQL, MySQL, Tailwind CSS",
+                skills_manual="React, Node.js, Python, FastAPI, Docker, MySQL",
+                expected_salary="₹18,00,000 - ₹24,00,000",
+                availability="Immediate (15 Days)"
+            )
+            db.add(cand)
+            db.commit()
+
+        # 2. Recruiter Demo
+        recruiter = db.query(User).filter(User.email == "recruiter.demo@gateway.ai").first()
+        if not recruiter:
+            recruiter = User(
+                email="recruiter.demo@gateway.ai",
+                password=hash_password("RecruiterPass123!"),
+                role="recruiter",
+                name="Priya Verma",
+                current_role="Talent Acquisition Lead",
+                mobile="+91 98111 22334"
+            )
+            db.add(recruiter)
+            db.commit()
+            db.refresh(recruiter)
+
+        # 3. Sample Jobs
+        if db.query(Job).count() == 0:
+            rec_id = recruiter.id if recruiter else 1
+            sample_jobs = [
+                Job(
+                    title="Senior Full Stack Engineer",
+                    company="Nexus Tech Labs",
+                    location="Bengaluru / Remote",
+                    job_type="Full-time",
+                    salary_range="₹22,00,000 - ₹30,00,000",
+                    description="We are seeking an experienced Full Stack Engineer proficient in React, FastAPI, and MySQL to design scalable cloud-native architectures.",
+                    recruiter_id=rec_id,
+                    skills="React, Python, FastAPI, MySQL, Tailwind CSS, Docker"
+                ),
+                Job(
+                    title="AI / ML Systems Engineer",
+                    company="Hyperion AI",
+                    location="Hyderabad / Hybrid",
+                    job_type="Full-time",
+                    salary_range="₹25,00,000 - ₹38,00,000",
+                    description="Join our core AI team to implement LLM pipelines, RAG systems, and generative agent workflows using PyTorch and Gemini APIs.",
+                    recruiter_id=rec_id,
+                    skills="Python, PyTorch, Gemini API, FastAPI, Vector DB, NLP"
+                ),
+                Job(
+                    title="Frontend Architect (React / Next.js)",
+                    company="Starlight Digital",
+                    location="Remote",
+                    job_type="Full-time",
+                    salary_range="₹18,00,000 - ₹26,00,000",
+                    description="Looking for a design-savvy frontend architect who excels at building lightning-fast interactive dashboards, microfrontends, and charting suites.",
+                    recruiter_id=rec_id,
+                    skills="React, TypeScript, Tailwind CSS, Recharts, Vite"
+                ),
+                Job(
+                    title="DevOps & Cloud Reliability Engineer",
+                    company="CloudScale Networks",
+                    location="Pune / Remote",
+                    job_type="Full-time",
+                    salary_range="₹20,00,000 - ₹28,00,000",
+                    description="Architect CI/CD pipelines, monitor containerized services, and optimize cloud infrastructure on AWS and Render.",
+                    recruiter_id=rec_id,
+                    skills="Docker, Kubernetes, AWS, CI/CD, Python, Linux"
+                ),
+                Job(
+                    title="Product Designer & UX Lead",
+                    company="InnoDesign Studios",
+                    location="Gurugram / On-site",
+                    job_type="Full-time",
+                    salary_range="₹16,00,000 - ₹22,00,000",
+                    description="Craft frictionless candidate journeys, recruiter analytics panels, and enterprise design systems for modern SaaS platforms.",
+                    recruiter_id=rec_id,
+                    skills="Figma, UI/UX, Design Systems, Wireframing, User Research"
+                ),
+            ]
+            db.add_all(sample_jobs)
+            db.commit()
+        db.close()
+    except Exception as e:
+        print(f"Startup seeder warning: {e}")
+
+
 @app.post("/auth/google")
 async def google_auth(data: dict, db: Session = Depends(get_db)):
     email = data.get("email")

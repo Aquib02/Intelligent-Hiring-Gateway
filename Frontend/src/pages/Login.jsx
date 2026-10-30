@@ -55,13 +55,17 @@ export default function Login() {
       setAuthSession({ access_token, user_id, role, name, email: cleanEmail });
       handleRouting(role);
     } catch (error) {
-      setErrorMsg(error.response?.data?.detail || 'Invalid email or password. Please verify credentials or register.');
+      if (!error.response) {
+        setErrorMsg(`Network Error: Cannot connect to Backend at ${API_BASE_URL}. If Render is waking up from sleep, please wait 30 seconds and try again, or check VITE_API_URL in Vercel.`);
+      } else {
+        setErrorMsg(error.response?.data?.detail || 'Invalid email or password. Please verify credentials or register.');
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  // 1-Click Instant Demo Login (Authenticates directly with pre-seeded demo user)
+  // 1-Click Instant Demo Login (Uses robust /auth/demo-login with auto-provisioning)
   const quickLogin = async (roleType) => {
     setLoading(true);
     setErrorMsg('');
@@ -74,17 +78,30 @@ export default function Login() {
     setSelectedRolePreview(roleType);
 
     const formData = new FormData();
-    formData.append('email', demoEmail);
-    formData.append('password', demoPass);
+    formData.append('role', roleType);
 
     try {
-      const response = await axios.post(`${API_BASE_URL}/auth/login`, formData);
-      const { access_token, user_id, role, name } = response.data;
+      // First try dedicated demo endpoint
+      let response;
+      try {
+        response = await axios.post(`${API_BASE_URL}/auth/demo-login`, formData);
+      } catch (demoErr) {
+        // Fallback to standard login endpoint with credentials
+        const loginData = new FormData();
+        loginData.append('email', demoEmail);
+        loginData.append('password', demoPass);
+        response = await axios.post(`${API_BASE_URL}/auth/login`, loginData);
+      }
 
+      const { access_token, user_id, role, name } = response.data;
       setAuthSession({ access_token, user_id, role, name, email: demoEmail });
       handleRouting(role);
     } catch (error) {
-      setErrorMsg('Failed to log in with demo account. Please try again.');
+      if (!error.response) {
+        setErrorMsg(`Server unreachable at ${API_BASE_URL}. Render free tier backend may be sleeping (waking up takes ~30-40s) or VITE_API_URL is missing in Vercel. Please retry in a moment.`);
+      } else {
+        setErrorMsg(error.response?.data?.detail || 'Failed to authenticate demo account. Please try again or create an account.');
+      }
     } finally {
       setLoading(false);
     }
